@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест на ударения со звуками</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .quiz-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 85%;
+            max-width: 500px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        .quiz-container:hover {
+            transform: scale(1.01);
+        }
+        .question {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+        .option {
+            padding: 16px;
+            background: #f9f9f9;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+        .option:hover {
+            background: #eef;
+            transform: translateY(-2px);
+        }
+        .option:active {
+            transform: scale(0.98);
+        }
+        .option.selected {
+            background: #e0f7fa;
+            border-color: #4CAF50;
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.2);
+        }
+        .option.correct {
+            background: #e8f5e9;
+            border-color: #81c784;
+            animation: pulse 0.5s;
+        }
+        .option.incorrect {
+            background: #ffebee;
+            border-color: #e57373;
+            animation: shake 0.4s;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-8px); }
+            80% { transform: translateX(8px); }
+        }
+        .buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        button {
+            padding: 14px 28px;
+            font-size: 18px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        button:active {
+            transform: scale(0.96);
+        }
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        button:focus:not(:active)::after {
+            animation: ripple 0.6s ease-out;
+        }
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+        #check-btn {
+            background: #4CAF50;
+            color: white;
+            box-shadow: 0 4px 0 #3e8e41;
+        }
+        #check-btn:active {
+            box-shadow: 0 2px 0 #3e8e41;
+            transform: translateY(2px);
+        }
+        #next-btn {
+            background: #2196F3;
+            color: white;
+            box-shadow: 0 4px 0 #1769aa;
+            display: none;
+        }
+        #next-btn:active {
+            box-shadow: 0 2px 0 #1769aa;
+            transform: translateY(2px);
+        }
+        .result {
+            font-size: 20px;
+            margin: 15px 0;
+            font-weight: bold;
+            min-height: 27px;
+        }
+        .correct {
+            color: #4CAF50;
+        }
+        .incorrect {
+            color: #f44336;
+        }
+        .score {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #555;
+        }
+        .progress {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="score">Баллы: <span id="score">0</span> / <span id="total">0</span></div>
+        <div class="question">Выберите слова с правильным ударением:</div>
+        <div class="options" id="options"></div>
+        <div class="buttons">
+            <button id="check-btn" onclick="checkAnswer()">Проверить</button>
+            <button id="next-btn" onclick="nextQuestion()">Далее →</button>
+        </div>
+        <div id="result" class="result"></div>
+        <div class="progress">Вопрос <span id="current-q">1</span> из <span id="total-q">10</span></div>
+    </div>
+
+    <!-- Скрытые аудио-элементы -->
+    <audio id="click-sound" src="C:\Users\maxku\Downloads\mixkit-single-key-type-2533.wav"
+preload="auto"></audio>
+    <audio id="correct-sound" src="C:\Users\maxku\Downloads\mixkit-fairy-arcade-sparkle-866.wav" preload="auto"></audio>
+    <audio id="wrong-sound" src="C:\Users\maxku\Downloads\mixkit-funny-cartoon-fast-splat-2889.wav" preload="auto"></audio>
+    <audio id="next-sound" src="C:\Users\maxku\Downloads\mixkit-modern-technology-select-3124.wav" preload="auto"></audio>
+
+    <script>
+        // Звуковые эффекты
+        function playSound(id) {
+            const sound = document.getElementById(id);
+            sound.currentTime = 0;
+            sound.play().catch(e => console.log("Звук не воспроизведён:", e));
+        }
+
+        // База всех слов
+        const allWords = [
+               { correct: "бАнты", incorrect: "бантЫ" },
+            { correct: "понЯвший", incorrect: "пОнявший" },
+            { correct: "облегчИт", incorrect: "облЕгчит" },
+            { correct: "сорИт", incorrect: "сОрит" },
+            { correct: "тОрты", incorrect: "тортЫ" },
+ { correct: "тУфля", incorrect: "туфлЯ" },
+ { correct: "шАрфы", incorrect: "шарфЫ" },
+ { correct: "бОроду", incorrect: "бородУ" },
+ { correct: "Иксы", incorrect: "иксЫ" },
+ { correct: "Отрочество", incorrect: "отрОчество" },
+ { correct: "лЕкторов", incorrect: "лекторОв" },
+ { correct: "кОнусов", incorrect: "конусОв" },
+ { correct: "вероисповЕдание", incorrect: "вероисповедАние" },
+ { correct: "сосредотОчение", incorrect: "сосредоточЕние" },
+ { correct: "дешевИзна", incorrect: "дешевизнА" },
+ { correct: "водопровОд", incorrect: "водопрОвод" },
+ { correct: "нефтепровОд", incorrect: "нефтепрОвод" },
+ { correct: "газопровОд", incorrect: "газопрОвод" },
+ { correct: "диспансЕр", incorrect: "диспАнсер" },
+ { correct: "еретИк", incorrect: "ерЕтик" },
+ { correct: "жалюзИ", incorrect: "жАлюзи" },
+ { correct: "партЕр", incorrect: "пАртер" },
+ { correct: "столЯр", incorrect: "стОляр" },
+ { correct: "кремЕнь", incorrect: "крЕмень" },
+ { correct: "кремнЯ", incorrect: "крЕмня" },
+ { correct: "лОктя", incorrect: "локтЯ" },
+ { correct: "локтЕй", incorrect: "лОктей" },
+ { correct: "нОгтя", incorrect: "ногтЯ" },
+ { correct: "ногтЕй", incorrect: "нОгтей" },
+ { correct: "новостЕй", incorrect: "нОвостей" },
+ { correct: "танцОвщица", incorrect: "танцовщИца" },
+ { correct: "ловкА", incorrect: "лОвка" },
+ { correct: "мозаИчный", incorrect: "мозАичный" },
+ { correct: "оптОвый", incorrect: "Оптовый" },
+ { correct: "прозорлИвый", incorrect: "прозОрливый" },
+ { correct: "слИвовый", incorrect: "сливОвый" },
+ { correct: "зАгнутый", incorrect: "загнУтый" },
+ { correct: "сОгнутый", incorrect: "согнУтый" },
+ { correct: "нАчатый", incorrect: "начАтый" },
+ { correct: "зАнятый", incorrect: "занЯтый" },
+{ correct: "зАпертый", incorrect: "запЕртый" },
+{ correct: "прИнятый", incorrect: "принЯтый" },
+{ correct: "занятА", incorrect: "зАнята" },
+{ correct: "принятА", incorrect: "прИнята" },
+{ correct: "заселЕнный", incorrect: "засЕленный" },
+{ correct: "облегчЕнный", incorrect: "облЕгченный" },
+{ correct: "ободрЕнный", incorrect: "обОдренный" },
+{ correct: "обострЕнный", incorrect: "обОстренный" },
+{ correct: "отключЕнный", incorrect: "отклЮченный" },
+{ correct: "поделЕнный", incorrect: "подЕленный" },
+{ correct: "приручЕнный", incorrect: "прирУченный" },
+{ correct: "углублЕнный", incorrect: "углУбленный" },
+{ correct: "кормЯщий", incorrect: "кОрмящий" },
+{ correct: "кровоточАщий", incorrect: "кровотОчащий" },
+{ correct: "нажИвший", incorrect: "нАживший" },
+{ correct: "налИвший", incorrect: "нАливший" },
+{ correct: "нанЯвший", incorrect: "нАнявший" },
+{ correct: "начАвший", incorrect: "нАчавший" },
+{ correct: "понЯвший", incorrect: "пОнявший" },
+{ correct: "прожИвший", incorrect: "прОживший" },
+{ correct: "донЕльзя", incorrect: "дОнельзя" },
+{ correct: "балУясь", incorrect: "бАлуясь" },
+{ correct: "добелА", incorrect: "дОбела" },
+{ correct: "закУпорив", incorrect: "закупорИв" },
+{ correct: "начАв(шись)", incorrect: "нАчав(шись)" },
+{ correct: "прибЫв", incorrect: "прИбыв" },
+{ correct: "вчистУю", incorrect: "вчИстую" },
+{ correct: "бралА", incorrect: "брАла" },
+{ correct: "добралА(сь)", incorrect: "добрАла(сь)" },
+{ correct: "убралА", incorrect: "убралАсь" },
+{ correct: "взялА(сь)", incorrect: "взЯла(сь)" },
+{ correct: "воспринялА", incorrect: "воспрИняла" },
+{ correct: "звалА", incorrect: "звАла" },
+{ correct: "гналА(сь)", incorrect: "гнАла(сь)" },
+{ correct: "ждалА", incorrect: "ждАла" },
+{ correct: "лгалА", incorrect: "лгАла" },
+{ correct: "лилА", incorrect: "лИла" },
+{ correct: "навралА", incorrect: "наврАла" },
+{ correct: "заперлА", incorrect: "зАперла" },
+{ correct: "обнялАсь", incorrect: "обнЯлась" },
+{ correct: "отбылА", incorrect: "отбЫла" },
+{ correct: "отдалА", incorrect: "отдАла" },
+{ correct: "ободралА", incorrect: "ободрАла" },
+{ correct: "понялА", incorrect: "пОняла" },
+{ correct: "снялА", incorrect: "снЯла" },
+{ correct: "создалА", incorrect: "создАла" },
+{ correct: "сорвалА", incorrect: "сорвАла" },
+{ correct: "клАла", incorrect: "клалА" },
+{ correct: "крАла", incorrect: "кралА" },
+{ correct: "слАла", incorrect: "слалА" },
+{ correct: "стлАла", incorrect: "стлалА" },
+{ correct: "вручИт", incorrect: "врУчит" },
+{ correct: "защемИт", incorrect: "защЕмит" },
+{ correct: "наделИт", incorrect: "надЕлит" },
+{ correct: "облегчИт", incorrect: "облЕгчит" },
+{ correct: "окружИт", incorrect: "окрУжит" },
+{ correct: "накренИтся", incorrect: "накрЕнится" },
+{ correct: "ободрИтся", incorrect: "обОдрится" },
+{ correct: "обострИть", incorrect: "обОстрить" },
+{ correct: "одолжИть", incorrect: "одОлжить" },
+{ correct: "щемИт", incorrect: "щЕмит" },
+{ correct: "пломбировАть", incorrect: "пломбИровать" },
+{ correct: "жилОсь", incorrect: "жИлось" },
+{ correct: "кровоточИть", incorrect: "кровотОчить" },
+{ correct: "плодоносИть", incorrect: "плодонОсить" },
+{ correct: "повторИт", incorrect: "повтОрит" },
+{ correct: "положИть", incorrect: "полОжить" },
+{ correct: "сверлИт", incorrect: "свЕрлит" },
+{ correct: "сорИт", incorrect: "сОрит" },
+{ correct: "углубИть", incorrect: "углУбить" },
+{ correct: "укрепИт", incorrect: "укрЕпит" },
+{ correct: "прИбыл", incorrect: "прибЫл" },
+{ correct: "прибылА", incorrect: "прИбыла" },
+{ correct: "прИбыли", incorrect: "прибЫли" },
+{ correct: "прИнял", incorrect: "принЯл" },
+{ correct: "принялА", incorrect: "принЯла" },
+{ correct: "нАчали", incorrect: "начАли" },
+{ correct: "озлОбить", incorrect: "озлобИть" },
+{ correct: "чЕрпать", incorrect: "черпАть" },
+{ correct: "щЕлкать", incorrect: "щелкАть" },
+{ correct: "дозИровать", incorrect: "дозировАть" },
+{ correct: "закУпорить", incorrect: "закупОрить" },
+{ correct: "опОшлить", incorrect: "опошлИть" },
+{ correct: "кАшлянуть", incorrect: "кашлянУть" },
+{ correct: "освЕдомиться", incorrect: "осведомИться" },
+{ correct: "баловАть", incorrect: "бАловать" },
+{ correct: "убыстрИть", incorrect: "убЫстрить" },
+{ correct: "накренИться", incorrect: "накрЕниться" },
+{ correct: "зАняло", incorrect: "занялО" },
+{ correct: "одолжИт", incorrect: "одОлжит" },
+{ correct: "кровоточИть", incorrect: "кровотОчить" },
+{ correct: "бАловень", incorrect: "балОвень" },
+{ correct: "окружИт", incorrect: "окрУжит" },
+{ correct: "плодоносИть", incorrect: "плодонОсить" },
+{ correct: "принУдить", incorrect: "принудИть" },
+{ correct: "балУясь", incorrect: "бАлуясь" },
+{ correct: "зАгодя", incorrect: "загодЯ" },
+{ correct: "дОверху", incorrect: "довЕрху" },
+{ correct: "исчЕрпав", incorrect: "исчерпАв" },
+{ correct: "молЯщий", incorrect: "мОлящий" },
+{ correct: "нАжитый", incorrect: "нажИтый" },
+{ correct: "нажитА", incorrect: "нажИта" },
+{ correct: "дозИровать", incorrect: "дозировАть" },
+{ correct: "формировАть", incorrect: "формИровать" },
+{ correct: "корЫсть", incorrect: "кОрысть" },
+{ correct: "чЕлюстей", incorrect: "челюстЕй" },
+{ correct: "доЯр", incorrect: "дОяр" },
+{ correct: "киоскЕр", incorrect: "киОскер" },
+{ correct: "анАтом", incorrect: "анатОм" },
+{ correct: "аристокрАтия", incorrect: "аристократИя" },
+{ correct: "баловнИк", incorrect: "бАловник" },
+{ correct: "блАговест", incorrect: "благовЕст" },
+{ correct: "апострОф", incorrect: "апОстроф" },
+{ correct: "бОчковый", incorrect: "бочкОвый" },
+{ correct: "буржуазИя", incorrect: "буржуАзия" },
+{ correct: "валовОй", incorrect: "вАловой" },
+{ correct: "волкОв", incorrect: "вОлков" },
+{ correct: "досУг", incorrect: "дОсуг" },
+{ correct: "гастронОмия", incorrect: "гастрономИя" },
+{ correct: "гЕнезис", incorrect: "генЕзис" },
+{ correct: "гренадЕр", incorrect: "гренАдер" },
+{ correct: "грУшевый", incorrect: "грушЕвый" },
+{ correct: "дремОта", incorrect: "дремотА" },
+{ correct: "духовнИк", incorrect: "духОвник" },
+{ correct: "жЕлоб", incorrect: "желОб" },
+{ correct: "завИдно", incorrect: "зАвидно" },
+{ correct: "зимОвщик", incorrect: "зимовщИк" },
+{ correct: "знАмение", incorrect: "знамЕние" },
+{ correct: "знАхарство", incorrect: "знахАрство" },
+{ correct: "зубчАтый", incorrect: "зУбчатый" },
+{ correct: "Игрище", incorrect: "игрИще" },
+{ correct: "Иконопись", incorrect: "икОнопись" },
+{ correct: "кАтарсис", incorrect: "катАрсис" },
+{ correct: "кожЕвенный", incorrect: "кожевЕнный" },
+{ correct: "коклЮш", incorrect: "кОклюш" },
+{ correct: "крАны", incorrect: "кранЫ" },
+{ correct: "ломОта", incorrect: "ломотА" },
+{ correct: "лоскУт(кусочек ткани)", incorrect: "лОскут" },
+{ correct: "лососЕвый", incorrect: "лосОсевый" },
+{ correct: "лубОчный", incorrect: "лУбочный" },
+{ correct: "мЕльком", incorrect: "мелькОм" },
+{ correct: "мытАрство", incorrect: "мЫтарство" },
+{ correct: "недоИмка", incorrect: "нЕдоимка" },
+{ correct: "остриЕ", incorrect: "Острие" },
+{ correct: "отчАсти", incorrect: "Отчасти" },
+{ correct: "пАхота", incorrect: "пахОта" },
+{ correct: "плЕсневеть", incorrect: "плесневЕть" },
+{ correct: "премИнуть", incorrect: "преминУть" },
+{ correct: "премировАть", incorrect: "премИровать" },
+{ correct: "фОрзац", incorrect: "форзАц" },
+{ correct: "ходАтайствовать", incorrect: "ходатАйстовать" },
+{ correct: "шпрИцы", incorrect: "шприцЫ" },
+{ correct: "щавЕль", incorrect: "щавЕль" },
+            { correct: "звонИт", incorrect: "звОнит" }
+        ];
+
+        let currentQuestion = [];
+        let score = 0;
+        let totalQuestions = 0;
+        const totalTestQuestions = 10;
+
+        // Инициализация теста
+        function initTest() {
+            score = 0;
+            totalQuestions = 0;
+            updateScore();
+            generateQuestion();
+            document.getElementById('total-q').textContent = totalTestQuestions;
+        }
+
+        // Сгенерировать вопрос
+        function generateQuestion() {
+            if (totalQuestions >= totalTestQuestions) {
+                showFinalResults();
+                return;
+            }
+
+            const shuffled = [...allWords].sort(() => Math.random() - 0.5).slice(0, 4);
+            currentQuestion = shuffled.map(word => {
+                const isCorrect = Math.random() > 0.5;
+                return {
+                    text: isCorrect ? word.correct : word.incorrect,
+                    isCorrect: isCorrect,
+                    correctForm: word.correct
+                };
+            });
+
+            renderQuestion();
+            document.getElementById('current-q').textContent = totalQuestions + 1;
+        }
+
+        // Отобразить вопрос
+        function renderQuestion() {
+            const optionsHtml = currentQuestion.map((word, index) => `
+                <div class="option" data-correct="${word.isCorrect}" data-index="${index}">
+                    ${word.text}
+                </div>
+            `).join('');
+
+            document.getElementById('options').innerHTML = optionsHtml;
+            document.getElementById('result').textContent = "";
+            document.getElementById('check-btn').style.display = "block";
+            document.getElementById('next-btn').style.display = "none";
+            
+            document.querySelectorAll('.option').forEach(option => {
+                option.addEventListener('click', function() {
+                    if (!this.classList.contains('correct') && !this.classList.contains('incorrect')) {
+                        this.classList.toggle('selected');
+                        playSound('click-sound');
+                    }
+                });
+            });
+        }
+
+        // Проверить ответ
+        function checkAnswer() {
+            playSound('click-sound');
+            const selectedOptions = Array.from(document.querySelectorAll('.option.selected'));
+            const correctOptions = Array.from(document.querySelectorAll('.option[data-correct="true"]'));
+            
+            // Подсветка
+            document.querySelectorAll('.option').forEach(opt => {
+                if (opt.dataset.correct === "true") {
+                    opt.classList.add('correct');
+                } else if (selectedOptions.includes(opt)) {
+                    opt.classList.add('incorrect');
+                }
+            });
+
+            // Проверка
+            const correctSelected = selectedOptions.filter(opt => opt.dataset.correct === "true").length;
+            const isPerfect = correctSelected === correctOptions.length && 
+                             selectedOptions.length === correctOptions.length;
+
+            if (isPerfect) {
+                score++;
+                document.getElementById('result').textContent = "🥳✅ Всё верно!";
+                document.getElementById('result').className = "result correct";
+                playSound('correct-sound');
+            } else {
+                document.getElementById('result').textContent = "😵❌ Ошибка!";
+                document.getElementById('result').className = "result incorrect";
+                playSound('wrong-sound');
+            }
+
+            totalQuestions++;
+            updateScore();
+            document.getElementById('check-btn').style.display = "none";
+            document.getElementById('next-btn').style.display = "block";
+        }
+
+        // Следующий вопрос
+        function nextQuestion() {
+            playSound('next-sound');
+            generateQuestion();
+        }
+
+        // Итоговые результаты
+        function showFinalResults() {
+            playSound(score > totalTestQuestions / 2 ? 'correct-sound' : 'wrong-sound');
+            document.querySelector('.quiz-container').innerHTML = `
+                <h2>Тест завершён!</h2>
+                <div class="final-score" style="font-size: 24px; margin: 20px 0;">Ваш результат: ${score} из ${totalTestQuestions}</div>
+                <button onclick="initTest()" style="background: #FF9800; color: white; padding: 14px 28px;">Пройти ещё раз</button>
+            `;
+        }
+
+        // Обновить счётчик
+        function updateScore() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('total').textContent = totalQuestions;
+        }
+
+        // Запуск
+        window.onload = initTest;
+    </script>
+</body>
+</html>
